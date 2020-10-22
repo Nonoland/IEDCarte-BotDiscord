@@ -61,9 +61,21 @@ public class CarteBot {
                             e.printStackTrace();
                         }
 
-                        Message newMessage = message.getChannel().block()
-                                .createMessage("Carte en cours de chargement...").block();
-                        settings.setIdMessage(newMessage.getId().asLong());
+                        Message newMessageTable = message.getChannel().block()
+                                .createMessage("La liste est vide pour le moment...").block();
+                        settings.setIdMessageTable(newMessageTable.getId().asLong());
+
+                        Message newMessageInfo = message.getChannel().block()
+                                .createMessage(getUtf8("\nPour mettre à jours votre ville : !carte <ville>\nCode source du bot: https://github.com/Nonoland/IEDCarte-BotDiscord")).block();
+                        settings.setIdMessageInfo(newMessageInfo.getId().asLong());
+
+                        gateway.getMessageById(Snowflake.of(settings.getIdChannel()), Snowflake.of(settings.getIdMessageInfo())).block().edit(spec -> spec.setContent(newMessageInfo.getContent()).setFlags(Message.Flag.SUPPRESS_EMBEDS)).block();
+
+                        try {
+                            saveSettings();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }
 
                 }
@@ -92,11 +104,12 @@ public class CarteBot {
                         e.printStackTrace();
                     }
 
-                    message.getAuthor().get().getPrivateChannel().block().createMessage(getUtf8("Votre ville a été mis à jours !")).block();
-                    updateMainMessage();
+                    message.getAuthor().get().getPrivateChannel().block().createMessage(getUtf8("Votre ville a été mise à jours !")).block();
+                    updateMessageTable();
 
                 } else if (message.getContent().equalsIgnoreCase(("!stop iedcarte"))) {
                     if(event.getMember().get().getBasePermissions().block().contains(Permission.ADMINISTRATOR)) {
+                        message.delete().block();
                         gateway.logout().block();
                         while(gateway.getGuilds().blockFirst() != null)
                             System.exit(0);
@@ -111,21 +124,20 @@ public class CarteBot {
         gateway.onDisconnect().block();
     }
 
-    public void updateMainMessage() {
+    public void updateMessageTable() {
         String content = "";
 
         for(Student s : settings.getStudents()) {
                 content += gateway.getUserById(Snowflake.of(s.getIdStudent())).block().getUsername() + " | "
                     + gateway.getUserById(Snowflake.of(s.getIdStudent())).block().getMention()
-                    + " | Ville: " + s.getCity() + "\n"
-                    + "Pour mettre à jours votre ville : !carte <ville>";
+                    + " | " + s.getCity();
         }
 
         MessageEditSpec test = new MessageEditSpec();
         test.setContent(content);
 
         String finalContent = content;
-        gateway.getMessageById(Snowflake.of(settings.getIdChannel()), Snowflake.of(settings.getIdMessage())).block().edit(spec -> spec.setContent(getUtf8(finalContent))).block();
+        gateway.getMessageById(Snowflake.of(settings.getIdChannel()), Snowflake.of(settings.getIdMessageTable())).block().edit(spec -> spec.setContent(getUtf8(finalContent)).setFlags(Message.Flag.SUPPRESS_EMBEDS)).block();
     }
 
     public void loadSettings() throws IOException {
