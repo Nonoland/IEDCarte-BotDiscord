@@ -69,7 +69,8 @@ public class CarteBot {
                                 .createMessage(getUtf8("\nPour mettre à jours votre ville : !carte <ville>\nCode source du bot: https://github.com/Nonoland/IEDCarte-BotDiscord")).block();
                         settings.setIdMessageInfo(newMessageInfo.getId().asLong());
 
-                        gateway.getMessageById(Snowflake.of(settings.getIdChannel()), Snowflake.of(settings.getIdMessageInfo())).block().edit(spec -> spec.setContent(newMessageInfo.getContent()).setFlags(Message.Flag.SUPPRESS_EMBEDS)).block();
+                        gateway.getMessageById(Snowflake.of(settings.getIdChannel()), Snowflake.of(settings.getIdMessageInfo()))
+                                .block().edit(spec -> spec.setContent(newMessageInfo.getContent()).setFlags(Message.Flag.SUPPRESS_EMBEDS)).block();
 
                         try {
                             saveSettings();
@@ -137,7 +138,8 @@ public class CarteBot {
         test.setContent(content);
 
         String finalContent = content;
-        gateway.getMessageById(Snowflake.of(settings.getIdChannel()), Snowflake.of(settings.getIdMessageTable())).block().edit(spec -> spec.setContent(getUtf8(finalContent)).setFlags(Message.Flag.SUPPRESS_EMBEDS)).block();
+        gateway.getMessageById(Snowflake.of(settings.getIdChannel()), Snowflake.of(settings.getIdMessageTable())).block()
+                .edit(spec -> spec.setContent(getUtf8(finalContent)).setFlags(Message.Flag.SUPPRESS_EMBEDS)).block();
     }
 
     public void loadSettings() throws IOException {
