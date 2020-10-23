@@ -131,7 +131,7 @@ public class CarteBot {
         for(Student s : settings.getStudents()) {
                 content += gateway.getUserById(Snowflake.of(s.getIdStudent())).block().getUsername() + " | "
                     + gateway.getUserById(Snowflake.of(s.getIdStudent())).block().getMention()
-                    + " | " + s.getCity();
+                    + " | " + s.getCity() + "\n";
         }
 
         MessageEditSpec test = new MessageEditSpec();
