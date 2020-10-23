@@ -7,120 +7,48 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.MessageEditSpec;
-import discord4j.rest.util.Permission;
 import fr.nonoland.discordbotied.json.Settings;
 import fr.nonoland.discordbotied.json.Student;
+import fr.nonoland.discordbotied.listener.MessageListener;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class CarteBot {
 
-    private String token;
+    public String token;
 
-    private DiscordClient client;
-    private GatewayDiscordClient gateway;
-    private Settings settings;
+    public DiscordClient client;
+    public GatewayDiscordClient gateway;
+    public Settings settings;
 
-    private Gson gson;
-    private final Path pathSettings = Paths.get("settings.json");
+    public Gson gson;
+    public final Path pathSettings = Paths.get("settings.json");
 
-    public CarteBot(String token) throws IOException {
+    public boolean isSetup = false;
+
+    /* Listeners */
+    private MessageListener messageListener;
+
+    public CarteBot(String token) {
         this.token = token;
         this.gson = new Gson();
 
-        loadSettings();
+        /* Load listeners */
+        messageListener = new MessageListener(this);
 
-        System.out.println(settings.getIdChannel());
+        loadSettings();
 
         client = DiscordClient.create(this.token);
         gateway = client.login().block();
 
-        gateway.on(MessageCreateEvent.class).subscribe(event -> {
-            Message message = event.getMessage();
-            String[] args = message.getContent().split(" ");
-
-            if(settings.getIdChannel() == 0) {
-                if(args[0].equalsIgnoreCase("!setup")) {
-                    message.delete().block();
-                    /* Setup code */
-                    if(event.getMember().get().getBasePermissions().block().contains(Permission.ADMINISTRATOR)) {
-                        //Set new Id Channel
-                        settings.setIdChannel(event.getMessage().getChannelId().asLong());
-                        //Save information
-                        try {
-                            saveSettings();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-
-                        Message newMessageTable = message.getChannel().block()
-                                .createMessage("La liste est vide pour le moment...").block();
-                        settings.setIdMessageTable(newMessageTable.getId().asLong());
-
-                        Message newMessageInfo = message.getChannel().block()
-                                .createMessage(getUtf8("\nPour mettre à jours votre ville : !carte <ville>\nCode source du bot: https://github.com/Nonoland/IEDCarte-BotDiscord")).block();
-                        settings.setIdMessageInfo(newMessageInfo.getId().asLong());
-
-                        gateway.getMessageById(Snowflake.of(settings.getIdChannel()), Snowflake.of(settings.getIdMessageInfo()))
-                                .block().edit(spec -> spec.setContent(newMessageInfo.getContent()).setFlags(Message.Flag.SUPPRESS_EMBEDS)).block();
-
-                        try {
-                            saveSettings();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                }
-            }else if(message.getChannelId().asLong() == settings.getIdChannel()) {
-
-                if (args[0].equalsIgnoreCase("!carte") && args.length == 2) {
-                    message.delete().block();
-
-                    List<Student> result = settings.getStudents().stream()
-                            .filter(student -> message.getAuthor().get().getId().asLong() == student.getIdStudent())
-                            .collect(Collectors.toList());
-
-                    if(result.size() == 1) {
-                        settings.getStudents().get(settings.getStudents().indexOf(result.get(0))).setCity(args[1]);
-                    } else {
-                        Student newStudent = new Student();
-                        newStudent.setIdStudent(message.getAuthor().get().getId().asLong());
-                        newStudent.setCity(args[1]);
-
-                        settings.getStudents().add(newStudent);
-                    }
-
-                    try {
-                        saveSettings();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                    message.getAuthor().get().getPrivateChannel().block().createMessage(getUtf8("Votre ville a été mise à jours !")).block();
-                    updateMessageTable();
-
-                } else if (message.getContent().equalsIgnoreCase(("!stop iedcarte"))) {
-                    if(event.getMember().get().getBasePermissions().block().contains(Permission.ADMINISTRATOR)) {
-                        message.delete().block();
-                        gateway.logout().block();
-                        while(gateway.getGuilds().blockFirst() != null)
-                            System.exit(0);
-                    }
-                }
-
-            }
-
-
-        });
+        gateway.on(MessageCreateEvent.class).subscribe(event -> messageListener.event(event));
 
         gateway.onDisconnect().block();
     }
@@ -134,32 +62,40 @@ public class CarteBot {
                     + " | " + s.getCity() + "\n";
         }
 
-        MessageEditSpec test = new MessageEditSpec();
-        test.setContent(content);
-
         String finalContent = content;
         gateway.getMessageById(Snowflake.of(settings.getIdChannel()), Snowflake.of(settings.getIdMessageTable())).block()
-                .edit(spec -> spec.setContent(getUtf8(finalContent)).setFlags(Message.Flag.SUPPRESS_EMBEDS)).block();
+                .edit(spec -> {
+                    spec.setContent(getUtf8(finalContent));
+                }).block();
     }
 
-    public void loadSettings() throws IOException {
-        if(Files.exists(pathSettings)) {
-            Reader reader = Files.newBufferedReader(pathSettings);
-            this.settings = this.gson.fromJson(reader, Settings.class);
-        } else {
-            this.settings = new Settings();
+    public void loadSettings(){
+        try {
+            if(Files.exists(pathSettings)) {
+                Reader reader = Files.newBufferedReader(pathSettings);
+                this.settings = this.gson.fromJson(reader, Settings.class);
+                if(settings.getIdChannel() != 0)
+                    isSetup = true;
+            } else {
+                this.settings = new Settings();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    public void saveSettings() throws IOException {
-        Writer writer = Files.newBufferedWriter(pathSettings);
-        gson.toJson(this.settings, writer);
-        writer.close();
+    public void saveSettings() {
+        try {
+            Writer writer = Files.newBufferedWriter(pathSettings);
+            gson.toJson(this.settings, writer);
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public static String getUtf8(String str) {
-        byte[] value = str.getBytes(StandardCharsets.ISO_8859_1);
-        return new String(value, StandardCharsets.UTF_8);
+        return new String(str.getBytes(), StandardCharsets.UTF_8);
     }
 
     public static void main(String[] args) throws IOException {
