@@ -41,7 +41,7 @@ public class MessageListener {
                     /* Send info message and set id in settings */
                     Message newMessageInfo = message.getChannel().block()
                             .createMessage(spec -> {
-                                spec.setContent(carteBot.getUtf8("\nPour mettre à jours votre ville : !carte <ville>\nCode source du bot: https://github.com/Nonoland/IEDCarte-BotDiscord"));
+                                spec.setContent(carteBot.getUtf8("\nPour mettre à jours votre ville : !carte <ville>\nExemple: !carte Paris\nCode source du bot: https://github.com/Nonoland/IEDCarte-BotDiscord"));
                             }).block();
                     carteBot.settings.setIdMessageInfo(newMessageInfo.getId().asLong());
 

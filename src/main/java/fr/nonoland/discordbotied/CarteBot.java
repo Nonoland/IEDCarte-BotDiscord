@@ -5,15 +5,12 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.entity.Message;
-import discord4j.core.spec.MessageEditSpec;
 import fr.nonoland.discordbotied.json.Settings;
 import fr.nonoland.discordbotied.json.Student;
 import fr.nonoland.discordbotied.listener.MessageListener;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
