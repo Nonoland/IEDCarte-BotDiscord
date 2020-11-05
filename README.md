@@ -5,8 +5,7 @@ It uses the [Discord4J](https://github.com/Discord4J/Discord4J) and [Gson](https
 
 ## RoadMap
 
-* Clean code
-* Add comment
+* Make beautiful table
 
 ## Author
 :eyes: Nolan Dartois
