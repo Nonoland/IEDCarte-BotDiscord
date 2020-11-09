@@ -16,6 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.Comparator;
 
 public class CarteBot {
 
@@ -52,6 +54,13 @@ public class CarteBot {
 
     public void updateMessageTable() {
         String content = "";
+
+        Collections.sort(settings.getStudents(), new Comparator<Student>() {
+            @Override
+            public int compare(Student o1, Student o2) {
+                return o1.getCity().compareToIgnoreCase(o2.getCity());
+            }
+        });
 
         for(Student s : settings.getStudents()) {
                 content += gateway.getUserById(Snowflake.of(s.getIdStudent())).block().getUsername() + " | "
